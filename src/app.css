@@ -1,8 +1,16 @@
 @import "tailwindcss";
-@plugin "daisyui";
 
+/* On active UNIQUEMENT le thème light, rien d’autre */
+@plugin "daisyui" {
+  themes: light --default;
+}
+
+/* On personnalise le thème light existant */
 @plugin "daisyui/theme" {
-    name: "light";
-    default: true;
-    --color-primary: #14529D;
+  name: "light";
+  default: true;
+  color-scheme: light; /* force l’UI du navigateur en light aussi */
+
+  --color-primary: #14529D;
+  /* --color-primary-content: white; */ /* décommente si tu veux du texte blanc sur la primary */
 }
