@@ -6,40 +6,86 @@
     let salon = "";
     let pseudo = "";
 
+    // 🔹 Créer un salon
     async function createSalon(event) {
         event.preventDefault();
-        if (!salon || !pseudo) return Toast.error("Nom du salon et pseudo requis");
+        if (!salon.trim() || !pseudo.trim()) {
+            return Toast.error("Nom du salon et pseudo requis");
+        }
 
-        showLoadingModal();
-        const res = await fetch(`${urlApi}/rooms`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: salon }),
-        });
+        try {
+            showLoadingModal();
 
-        const data = await res.json();
-        hideLoadingModal();
-        if (!data.status) return Toast.error(data.message || "Erreur lors de la création du salon");
+            const res = await fetch(`${urlApi}/rooms`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: salon.trim() }),
+            });
 
-        localStorage.setItem("salon", data.id); // stocke l'ID
-        localStorage.setItem("pseudo", pseudo);
-        goto("/salon", { replaceState: true });
+            const data = await res.json();
+            hideLoadingModal();
+
+            if (!res.ok) {
+                return Toast.error(
+                    data.message || "Erreur lors de la création du salon",
+                );
+            }
+
+            if (!data?.status || !data?.id) {
+                return Toast.error("Réponse inattendue du serveur");
+            }
+
+            localStorage.setItem("salon", data.id);
+            localStorage.setItem("pseudo", pseudo.trim());
+
+            Toast.success("Salon créé avec succès !");
+            goto("/salon", { replaceState: true });
+        } catch (error) {
+            console.error("Erreur lors de la création du salon :", error);
+            hideLoadingModal();
+            Toast.error("Impossible de créer le salon. Vérifie ta connexion.");
+        }
     }
 
+    // 🔹 Rejoindre un salon
     async function joinSalon(event) {
         event.preventDefault();
-        if (!salon || !pseudo) return alert("Nom/ID du salon et pseudo requis");
+        if (!salon.trim() || !pseudo.trim()) {
+            return Toast.error("Nom/ID du salon et pseudo requis");
+        }
 
-        showLoadingModal();
-        const res = await fetch(`${urlApi}/rooms`);
-        const rooms = await res.json();
-        const room = rooms.find((r) => r.id === salon || r.name === salon);
-        hideLoadingModal();
-        if (!room) return Toast.error("Salon introuvable");
+        try {
+            showLoadingModal();
 
-        localStorage.setItem("salon", room.id);
-        localStorage.setItem("pseudo", pseudo);
-        goto("/salon", { replaceState: true }); 
+            const res = await fetch(`${urlApi}/rooms`);
+            const rooms = await res.json();
+            hideLoadingModal();
+
+            if (!Array.isArray(rooms)) {
+                return Toast.error("Erreur inattendue côté serveur");
+            }
+
+            const room = rooms.find(
+                (r) =>
+                    r.id === salon.trim() ||
+                    r.name.toLowerCase() === salon.trim().toLowerCase(),
+            );
+            if (!room) {
+                return Toast.error("Salon introuvable");
+            }
+
+            localStorage.setItem("salon", room.id);
+            localStorage.setItem("pseudo", pseudo.trim());
+
+            Toast.success(`Rejoint le salon "${room.name}"`);
+            goto("/salon", { replaceState: true });
+        } catch (error) {
+            console.error("Erreur lors de la recherche du salon :", error);
+            hideLoadingModal();
+            Toast.error(
+                "Impossible de rejoindre le salon. Vérifie ta connexion.",
+            );
+        }
     }
 </script>
 
@@ -88,7 +134,6 @@
         </div>
     </div>
 </section>
-
 
 <!-- Modal créer salon -->
 <dialog id="create_salon_modal" class="modal">
@@ -154,4 +199,3 @@
         >
     </form>
 </dialog>
-
